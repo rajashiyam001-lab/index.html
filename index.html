@@ -345,7 +345,7 @@ section{margin-bottom:5.5rem;contain:layout style;}
 .skill-cat:last-child{border-bottom:none;}
 .skill-matrix{display:flex;flex-direction:column;gap:0;position:relative;}
 .skill-neural-wrap{position:relative;width:100%;border:3px solid var(--white);box-shadow:6px 6px 0 var(--magenta);overflow:hidden;background:rgba(8,5,15,.95);}
-#neural-canvas{display:block;width:100%;height:420px;}
+#neural-canvas{display:block;width:100%;height:420px;overflow:hidden;}
 .skill-nodes-overlay{position:absolute;inset:0;pointer-events:none;}
 .skill-category-row{display:flex;gap:0;border-top:3px solid rgba(255,255,255,.1);}
 .skill-category-row:first-child{border-top:none;}
@@ -848,6 +848,18 @@ footer{border-top:3px solid var(--magenta);padding:3rem 0 5rem;text-align:center
         </div>
       </div>
       <div class="skill-category-row">
+        <div class="skill-cat">
+          <div class="skill-cat-label">
+            <span class="skill-cat-icon">💡</span>
+            <span class="skill-cat-name sn-orange">Data Insights</span>
+            <span class="skill-cat-desc">Profil hybride métier</span>
+          </div>
+          <div class="skill-nodes">
+            <div class="skill-node"><span class="node-dot nd-cyan" style="--i:0"></span><span class="node-label">Prédiction</span><span class="node-line"></span></div>
+            <div class="skill-node"><span class="node-dot nd-cyan" style="--i:1"></span><span class="node-label">Analyse financière</span><span class="node-line"></span></div>
+            <div class="skill-node"><span class="node-dot nd-cyan" style="--i:2"></span><span class="node-label">Reporting KPI</span><span class="node-line"></span></div>
+          </div>
+        </div>
         <div class="skill-cat" style="justify-content:flex-start;">
           <div class="skill-cat-label">
             <span class="skill-cat-icon">📊</span>
@@ -857,18 +869,6 @@ footer{border-top:3px solid var(--magenta);padding:3rem 0 5rem;text-align:center
           <div class="skill-nodes" style="gap:9px;">
             <div class="skill-node"><span class="node-dot nd-purple" style="--i:0"></span><span class="node-label">Excel</span><span class="node-line"></span></div>
             <div class="skill-node"><span class="node-dot nd-purple" style="--i:1"></span><span class="node-label">Power BI</span><span class="node-line"></span></div>
-          </div>
-        </div>
-        <div class="skill-cat">
-          <div class="skill-cat-label">
-            <span class="skill-cat-icon">💼</span>
-            <span class="skill-cat-name sn-orange">Finance & Gestion</span>
-            <span class="skill-cat-desc">Profil hybride métier</span>
-          </div>
-          <div class="skill-nodes">
-            <div class="skill-node"><span class="node-dot nd-cyan" style="--i:0"></span><span class="node-label">Prédiction</span><span class="node-line"></span></div>
-            <div class="skill-node"><span class="node-dot nd-cyan" style="--i:1"></span><span class="node-label">Analyse financière</span><span class="node-line"></span></div>
-            <div class="skill-node"><span class="node-dot nd-cyan" style="--i:2"></span><span class="node-label">Reporting KPI</span><span class="node-line"></span></div>
           </div>
         </div>
       </div>
@@ -1055,25 +1055,25 @@ document.getElementById("cv-row-btn").addEventListener("click",function(e){e.pre
       skills:['Joins','Aggregate Functions','Window Functions','Subqueries'] },
     { label:'🐍 Python',      color:'#FF3E8A', rgba:'255,62,138',
       skills:['Scikit-learn','Pandas / NumPy','Matplotlib / Seaborn'] },
+    { label:'💡 Data Insights', color:'#00F5FF', rgba:'0,245,255',
+      skills:['Prédiction','Analyse financière','Reporting KPI'] },
     { label:'📊 Visualisation',color:'#C084FC', rgba:'192,132,252',
       skills:['Excel','Power BI'] },
-    { label:'💼 Finance',      color:'#00F5FF', rgba:'0,245,255',
-      skills:['Prédiction','Analyse financière','Reporting KPI'] }
   ];
 
   const W = () => canvas.width;
   const H = () => canvas.height;
 
   function resize(){
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    canvas.width  = canvas.offsetWidth  || canvas.clientWidth  || 800;
+    canvas.height = canvas.offsetHeight || canvas.clientHeight || 420;
     buildNodes();
   }
 
   let nodes = [];
   function buildNodes(){
     nodes = [];
-    const pad = 56, topPad = 54, botPad = 40;
+    const pad = 70, topPad = 72, botPad = 55;
     const cols = categories.length;
     categories.forEach((cat, ci) => {
       const x = pad + (ci / (cols - 1)) * (W() - pad * 2);
@@ -1098,7 +1098,8 @@ document.getElementById("cv-row-btn").addEventListener("click",function(e){e.pre
     });
   }
 
-  resize();
+  // Delay resize so canvas has correct offsetWidth/Height after layout
+  requestAnimationFrame(() => { resize(); draw(); });
   window.addEventListener('resize', resize, {passive:true});
 
   // Signals
@@ -1117,9 +1118,15 @@ document.getElementById("cv-row-btn").addEventListener("click",function(e){e.pre
   function draw(){
     ctx.clearRect(0, 0, W(), H());
 
+    // Clip everything to canvas bounds so no line escapes outside
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W(), H());
+    ctx.clip();
+
     // Category header labels at top of each column
     categories.forEach((cat, ci) => {
-      const x = 56 + (ci / (categories.length-1)) * (W() - 112);
+      const x = 70 + (ci / (categories.length-1)) * (W() - 140);
       ctx.font = 'bold 11px Space Mono, monospace';
       ctx.textAlign = 'center';
       ctx.fillStyle = cat.color;
@@ -1210,10 +1217,12 @@ document.getElementById("cv-row-btn").addEventListener("click",function(e){e.pre
       ctx.shadowBlur = 0;
     });
 
+    ctx.restore(); // end clip region
+
     frame++;
     requestAnimationFrame(draw);
   }
-  draw();
+  // draw() is called inside the initial requestAnimationFrame above
 })();
 
 // glitch transition removed
